@@ -40,6 +40,18 @@ import baxter_external_devices
 from baxter_interface import CHECK_VERSION
 
 from final.msg import JointPos
+'''
+arg_fmt = argparse.RawDescriptionHelpFormatter
+parser = argparse.ArgumentParser(formatter_class=arg_fmt,
+                                description=main.__doc__,
+                                epilog=epilog)
+parser.parse_args(rospy.myargv()[1:])
+'''
+print("Initializing node... ")
+rospy.init_node("joint_reader")
+print("Getting robot state... ")
+rs = baxter_interface.RobotEnable(CHECK_VERSION)
+init_state = rs.state().enabled
 
 pub = rospy.Publisher('currentJointPosition', JointPos, queue_size = 5)
 
@@ -85,21 +97,10 @@ def pubCurPos():
     pub.publish(mes)
 
 def main():
-    arg_fmt = argparse.RawDescriptionHelpFormatter
-    parser = argparse.ArgumentParser(formatter_class=arg_fmt,
-                                     description=main.__doc__,
-                                     epilog=epilog)
-    parser.parse_args(rospy.myargv()[1:])
-
-    print("Initializing node... ")
-    rospy.init_node("joint_driver")
-    print("Getting robot state... ")
-    rs = baxter_interface.RobotEnable(CHECK_VERSION)
-    init_state = rs.state().enabled
-
+    
     if not init_state:
         print('Baxter not enabled')
-    rate = rospy.rate(10)
+    rate = rospy.Rate(10)
     while not rospy.is_shutdown():
         pubCurPos()
         rate.sleep()

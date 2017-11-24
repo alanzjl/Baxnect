@@ -41,6 +41,12 @@ from baxter_interface import CHECK_VERSION
 
 from final.msg import JointPos
 
+print("Initializing node... ")
+rospy.init_node("joint_driver")
+print("Getting robot state... ")
+rs = baxter_interface.RobotEnable(CHECK_VERSION)
+init_state = rs.state().enabled
+
 left = baxter_interface.Limb('left')
 right = baxter_interface.Limb('right')
 grip_left = baxter_interface.Gripper('left', CHECK_VERSION)
@@ -56,23 +62,12 @@ def jointSet(d):
     for i in range(len(rj)):
         lcommand[lj[i]] = ljoint[i]
         rcommand[rj[i]] = rjoint[i]
-    print('setting: left    ' + ljoint)
-    print('setting: right   ' + rjoint)
+    rospy.loginfo('setting: left    ' + ' '.join(str(e) for e in ljoint))
+    rospy.loginfo('setting: right   ' + ' '.join(str(e) for e in rjoint))
     left.set_joint_positions(lcommand)
     right.set_joint_positions(rcommand)
 
 def main():
-    arg_fmt = argparse.RawDescriptionHelpFormatter
-    parser = argparse.ArgumentParser(formatter_class=arg_fmt,
-                                     description=main.__doc__,
-                                     epilog=epilog)
-    parser.parse_args(rospy.myargv()[1:])
-
-    print("Initializing node... ")
-    rospy.init_node("joint_driver")
-    print("Getting robot state... ")
-    rs = baxter_interface.RobotEnable(CHECK_VERSION)
-    init_state = rs.state().enabled
 
     def clean_shutdown():
         print("\nExiting example...")
