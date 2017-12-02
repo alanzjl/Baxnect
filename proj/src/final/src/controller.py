@@ -24,17 +24,30 @@ if __name__ == '__main__':
     while not rospy.is_shutdown():
         jp = JointPos()
 
-        ''' Shoulder Joints '''
+        ''' Left Shoulder Joints '''
         try:
             (trans,rot) = listener.lookupTransform('/neck_1', '/left_shoulder_1', rospy.Time(0))
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             continue
         roll, pitch, yaw = quardToRPY(rot)
 
-        jp.lj2 = (yaw-1.368) / (pi / 2.) - 3.
         jp.lj1 = -1. * roll/ (pi / 2.)
+        jp.lj2 = (yaw-1.368) / (pi / 2.) - 3.
+        jp.lj0 = -1. * pitch
 
-        ''' Elbow Joints '''
+        
+        ''' Right Shoulder Joints '''
+        try:
+            (trans,rot) = listener.lookupTransform('/neck_1', '/right_shoulder_1', rospy.Time(0))
+        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+            continue
+        roll, pitch, yaw = quardToRPY(rot)
+
+        jp.rj1 = 2. * roll/ (pi / 2.)
+        jp.rj2 = (yaw-1.368) / (pi / 2.) - 3.
+        jp.rj0 = -1. * pitch
+
+        ''' Left Elbow Joints '''
         try:
             (trans,rot) = listener.lookupTransform('/left_shoulder_1', '/left_elbow_1', rospy.Time(0))
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
@@ -46,6 +59,27 @@ if __name__ == '__main__':
             jp.lj3 = pitch
         else:
             jp.lj3 = pi - pitch
+        
+        ''' Right Elbow Joints '''
+        try:
+            (trans,rot) = listener.lookupTransform('/right_shoulder_1', '/right_elbow_1', rospy.Time(0))
+        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+            continue
+
+        roll, pitch, yaw = quardToRPY(rot)
+
+        if fabs((fabs(yaw) - pi)) > pi/5.:
+            jp.rj3 = pitch
+        else:
+            jp.rj3 = pi - pitch
+
+        ''' Safety '''
+        jp.lj5 = -1.57
+        jp.rj5 = -1.57
+        if jp.rj0 < 0:
+            jp.rj0 = 0
+        if jp.lj0 > 0.:
+            jp.lj0 = 0.;
 
         pub.publish(jp)
 
