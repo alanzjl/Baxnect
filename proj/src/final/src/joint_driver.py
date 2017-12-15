@@ -49,8 +49,8 @@ init_state = rs.state().enabled
 
 left = baxter_interface.Limb('left')
 right = baxter_interface.Limb('right')
-grip_left = baxter_interface.Gripper('left', CHECK_VERSION)
-grip_right = baxter_interface.Gripper('right', CHECK_VERSION)
+left_grip = baxter_interface.Gripper('left', CHECK_VERSION)
+right_grip = baxter_interface.Gripper('right', CHECK_VERSION)
 lj = left.joint_names()
 rj = right.joint_names()
 
@@ -62,10 +62,18 @@ def jointSet(d):
     for i in range(len(rj)):
         lcommand[lj[i]] = ljoint[i]
         rcommand[rj[i]] = rjoint[i]
-    rospy.loginfo('setting: left    ' + ' '.join(str(e) for e in ljoint))
-    rospy.loginfo('setting: right   ' + ' '.join(str(e) for e in rjoint))
+    #rospy.loginfo('setting: left    ' + ' '.join(str(e) for e in ljoint))
+    #rospy.loginfo('setting: right   ' + ' '.join(str(e) for e in rjoint))
     left.set_joint_positions(lcommand)
     right.set_joint_positions(rcommand)
+    if d.lgrip:
+        left_grip.open()
+    else:
+        left_grip.close()
+    if d.rgrip:
+        right_grip.open()
+    else:
+        right_grip.close()
 
 def main():
 
@@ -78,6 +86,9 @@ def main():
 
     print("Enabling robot... ")
     rs.enable()
+
+    left_grip.calibrate()
+    # right_grip.calibrate()
 
     rospy.Subscriber("JointFeed", JointPos, jointSet)
     rospy.spin()

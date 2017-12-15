@@ -5,9 +5,9 @@ import math
 import tf
 from math import *
 from final.msg import JointPos
+from final.msg import Mode
 
-import baxter_interface
-from baxter_interface import CHECK_VERSION
+start = False
 
 
 def quardToRPY(rot):
@@ -17,19 +17,29 @@ def quardToRPY(rot):
     yaw = atan2(2. * (q0 * q3 + q1 * q2), (1. - 2. * (q2 ** 2 + q3 ** 2)))
     return [roll, pitch, yaw]
 
+def modeCallBack(msg):
+    global start
+    if msg.mode == 2:
+        start = True
+    else:
+        start = False
+
 
 if __name__ == '__main__':
-    rospy.init_node('turtle_tf_listener')
+    rospy.init_node('single_arm_controller')
 
     listener = tf.TransformListener()
-    left_grip = baxter_interface.Gripper('left', CHECK_VERSION)
+    #left_grip = baxter_interface.Gripper('left', CHECK_VERSION)
     pub = rospy.Publisher('JointFeed', JointPos, queue_size = 10)
+    rospy.Subscriber('mode_controller', Mode, modeCallBack)
+
+    # left_grip.calibrate()
 
     rate = rospy.Rate(10)
 
-    left_grip.calibrate()
-
     while not rospy.is_shutdown():
+        if not start:
+            continue
         jp = JointPos()
 
 
@@ -53,10 +63,16 @@ if __name__ == '__main__':
         roll, pitch, yaw = quardToRPY(rot)
 
         #jp.rj1 = 2. * roll/ (pi / 2.)
-        if roll > -10:
-            left_grip.open()
+        print roll
+        jp.lj5 = roll * -1.
+        '''
+        if roll < 0.8:
+            jp.lgrip = True
+            # left_grip.open()
         else:
-            left_grip.close()
+            jp.lgrip = False
+            # left_grip.close()
+        '''
         #jp.rj2 = (yaw-1.368) / (pi / 2.) - 3.
         #jp.lj5 = -1. * pitch
 
@@ -80,12 +96,19 @@ if __name__ == '__main__':
             continue
 
         roll, pitch, yaw = quardToRPY(rot)
-
-        if fabs((fabs(yaw) - pi)) > pi/5.:
-            jp.lj5 = pitch
+        print pitch, yaw
+        # jp.lj5 = -1. * pitch
+        if pitch < -1 * pi / 5.:
+            jp.lgrip = True
         else:
-            jp.lj5 = pi - pitch
+            jp.lgrip = False
 
+        '''
+        if fabs((fabs(yaw) - pi)) > pi/5.:
+            jp.lj5 = pi + pitch
+        else:
+            jp.lj5 = pitch - pi/2.
+        '''
         ''' Safety '''
         #jp.lj5 = -1.57
         jp.rj5 = -1.57
@@ -95,5 +118,4 @@ if __name__ == '__main__':
             jp.lj0 = 0.;
 
         pub.publish(jp)
-
         rate.sleep()

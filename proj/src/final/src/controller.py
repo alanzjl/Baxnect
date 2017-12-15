@@ -5,6 +5,9 @@ import math
 import tf
 from math import *
 from final.msg import JointPos
+from final.msg import Mode
+
+start = False
 
 def quardToRPY(rot):
     q3, q2, q1, q0 = rot
@@ -13,15 +16,33 @@ def quardToRPY(rot):
     yaw = atan2(2. * (q0 * q3 + q1 * q2), (1. - 2. * (q2 ** 2 + q3 ** 2)))
     return [roll, pitch, yaw]
 
+'''
+mode:
+    1, dual arm
+    2, single arm
+    0, stop
+'''
+
+def modeCallBack(msg):
+    global start
+    if msg.mode == 1:
+        start = True
+    else:
+        start = False
 
 if __name__ == '__main__':
-    rospy.init_node('turtle_tf_listener')
+    rospy.init_node('double_arm_controller')
 
     listener = tf.TransformListener()
     pub = rospy.Publisher('JointFeed', JointPos, queue_size = 10)
+    rospy.Subscriber('mode_controller', Mode, modeCallBack)
 
     rate = rospy.Rate(10)
+
     while not rospy.is_shutdown():
+        if not start:
+            continue
+
         jp = JointPos()
 
         ''' Left Shoulder Joints '''
@@ -69,9 +90,9 @@ if __name__ == '__main__':
         roll, pitch, yaw = quardToRPY(rot)
 
         if fabs((fabs(yaw) - pi)) > pi/5.:
-            jp.rj3 = pitch
+            jp.rj3 = -1. * pitch
         else:
-            jp.rj3 = pi - pitch
+            jp.rj3 = pi + pitch
 
         ''' Safety '''
         jp.lj5 = -1.57
@@ -82,5 +103,4 @@ if __name__ == '__main__':
             jp.lj0 = 0.;
 
         pub.publish(jp)
-
         rate.sleep()
